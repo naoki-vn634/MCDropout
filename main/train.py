@@ -2,13 +2,14 @@ import os
 import sys
 import torch
 import argparse
-
+import torch.nn as nn
 from glob import glob
 from sklearn.model_selection import train_test_split
 from distutils.util import strtobool
 
+
 sys.path.append('../preprocess/')
-from img_preprocess import *
+from img_preprocess import ImageTransform, MonteCarloDataset
 
 sys.path.append('../model/')
 from model import CustomMonteCarloVAE
@@ -60,7 +61,7 @@ def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device
                 epoch_loss += float(loss.item())*inputs.size(0)
                 epoch_correct += torch.sum(preds == labels.data)
             
-            epoch_loss = epoch_loss/len(dataloaders_dict.dataset())
+            epoch_loss = epoch_loss/len(dataloaders_dict[phase].dataset)
             epoch_acc = epoch_correct.double()/len(dataloaders_dict[phase].dataset)
 
             Loss[phase][epoch] = epoch_loss
@@ -142,10 +143,10 @@ def main(args):
         param.require_grad = True
 
     train_dataset = MonteCarloDataset(x_train, y_train, transform=transforms, phase='train')
-    train_dataloader = torch.utils.data.DataLoader(train_dataset,batch_size=args.batchsize,num_workers=1, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset,batch_size=args.batchsize,num_workers=0, shuffle=True)
     
     test_dataset = MonteCarloDataset(x_test,y_test,transform=transforms,phase='test')
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batchsize, num_workers=1, shuffle=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batchsize, num_workers=0, shuffle=False)
 
     print("Train_Length: ",len(train_dataloader.dataset))
     print("Test_Length: ",len(test_dataloader.dataset))

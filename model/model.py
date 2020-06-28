@@ -87,8 +87,11 @@ class CustomMonteCarloVAE(nn.Module):
                 conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
                 if batch_norm:
                     layers += [conv2d, nn.BatchNorm2d(v), nn.Dropout2d(p), nn.ReLU(inplace=True)]
+                elif p=None:
+                    layers = [conv2d, nn.ReLU(inplace=True)]                
                 else:
                     layers += [conv2d, nn.Dropout2d(p), nn.ReLU(inplace=True)]
+                
                 in_channels = v
         return nn.Sequential(*layers)
     
