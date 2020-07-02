@@ -12,7 +12,7 @@ sys.path.append('../preprocess/')
 from img_preprocess import ImageTransform, MonteCarloDataset
 
 sys.path.append('../model/')
-from model import CustomMonteCarloVAE
+from model import CustomMonteCarloVGG
 
 def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device, tfboard):
 
@@ -132,7 +132,7 @@ def main(args):
     # VGG16:A, 
     cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
 
-    net = CustomMonteCarloVAE(config=cfg['A'])
+    net = CustomMonteCarloVGG(config=cfg['A'],rate=None)
     net.to(device)
 
     if args.multi_gpu:
