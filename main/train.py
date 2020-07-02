@@ -132,7 +132,7 @@ def main(args):
     # VGG16:A, 
     cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
 
-    net = CustomMonteCarloVGG(config=cfg['A'],rate=None)
+    net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
     net.to(device)
 
     if args.multi_gpu:
@@ -172,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--tfboard', type=strtobool, default=False)
+    parser.add_argument('--dr_rate', type=float)
     
     args = parser.parse_args()
     main(args)
