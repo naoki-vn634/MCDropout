@@ -91,8 +91,8 @@ def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device
             torch.save(net.state_dict(),os.path.join(output,'best_loss.pth'))
     
     
-    best_acc_weight = os.path.join(output,'best_acc_new.pth')
-    best_loss_weight = os.path.join(output,'best_loss_new.pth')
+    best_acc_weight = os.path.join(output,'best_acc.pth')
+    best_loss_weight = os.path.join(output,'best_loss.pth')
     
     rename_acc_weight = os.path.join(output,'epoch_{}_loss_{:.3f}_acc_{:.3f}_best_acc.pth'.format(best_acc_epoch,Loss['test'][best_acc_epoch],Acc['test'][best_acc_epoch]))
     rename_loss_weight = os.path.join(output,'epoch_{}_loss_{:.3f}_acc_{:.3f}_best_loss.pth'.format(best_acc_epoch,Loss['test'][best_loss_epoch],Acc['test'][best_loss_epoch]))
@@ -132,7 +132,7 @@ def main(args):
     # VGG16:A, 
     cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
 
-    net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
+    net = CustomMonteCarloVGG(config=cfg['A'],rate=None)
     net.to(device)
 
     if args.multi_gpu:

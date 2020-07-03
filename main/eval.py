@@ -60,9 +60,9 @@ def main(args):
 
     
     bald = BALD(test_dataloader, net, device, n_drop=10, n_cls=2)
-    probs = bald.training
+    probs = bald.training()
     
-    print(probs)
+    print(probs.size())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
