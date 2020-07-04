@@ -16,10 +16,10 @@ class CustomMonteCarloVGG(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(512*7*7, 4096),
             nn.ReLU(True),
-            nn.Dropout2d(p=rate),
+            nn.Dropout2d(p=0.5),
             nn.Linear(4096,4096),
             nn.ReLU(True),
-            nn.Dropout2d(p=rate),
+            nn.Dropout2d(p=0.5),
             nn.Linear(4096,num_classes)
         )
         if init_weight:
