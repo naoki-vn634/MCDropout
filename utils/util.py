@@ -29,8 +29,8 @@ class BALD(object):
     def evaluating(self, probs):
         pb = probs.mean(0)
         entropy1 = (-pb*torch.log(pb)).sum(1)
-        entropy2 = (-probs*torch.log(probs)).sum(2).mean(0)
-        U = entropy2 - entropy1
+        entropy2 = (probs*torch.log(probs)).sum(2).mean(0)
+        U = entropy2 + entropy1
         return U
         
 

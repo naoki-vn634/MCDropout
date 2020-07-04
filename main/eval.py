@@ -4,6 +4,8 @@ import torch
 import argparse
 import pickle
 import torch.nn as nn
+import numpy as np
+
 from glob import glob
 from sklearn.model_selection import train_test_split
 from distutils.util import strtobool
@@ -49,7 +51,7 @@ def main(args):
             mode.append(1)#誤分類
         else:
             mode.append(0)#正解
-
+    mode_np = np.array(mode)
 
     print("##Image_Length: ",len(img_path))
     print("|-- right: ",mode.count(0))
@@ -71,23 +73,25 @@ def main(args):
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batchsize, num_workers=0, shuffle=False)
 
     
-    bald = BALD(test_dataloader, net, device, n_drop=args.n_dropout, n_cls=2)
+    bald = BALD(test_dataloader, net, device, n_drop=args.n_drop, n_cls=2)
     probs = bald.training()
     Bald = bald.evaluating(probs)
     
 
-    
+    Bald_np = Bald.cpu().data.numpy()
+    np.save(os.path.join(args.output, 'mode.npy'), mode_np)
+    np.save(os.path.join(args.output, f'{args.n_drop}_drops_bald.npy'), Bald_np)
     print(Bald.size())
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Calculate BALD(Bayesian ActiveLearning by Disagreement)')
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
     parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--weight', type=str)
-    parser.add_argument('--n_dropout', type=int, default=10)
+    parser.add_argument('--n_drop', type=int, default=10)
     args = parser.parse_args()
     main(args)
     
