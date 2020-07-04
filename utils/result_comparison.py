@@ -12,7 +12,22 @@ def calculate_entropy(pos):
         entropy = np.append(entropy,ent)
         
     return entropy
+def pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_ent,output):
+    plt.figure()
+    plt.plot(cost_pre_bald,pre_bald,label='bald')
+    plt.plot(cost_pre_pos,pre_pos,label='posterior')
+    plt.plot(cost_pre_ent,pre_ent,label='entropy')
+    plt.legend()
+    plt.savefig(os.path.join(output, 'precision.png'))
 
+def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output):
+    plt.figure()
+    plt.plot(cost_acc_bald,acc_bald,label='bald')
+    plt.plot(cost_acc_pos,acc_pos,label='posterior')
+    plt.plot(cost_acc_ent,acc_ent,label='entropy')
+    plt.legend()
+    plt.savefig(os.path.join(output, 'accuracy.png'))
+    
 def save_distribution(label, method, output, savename, hist=True):
     normal = method[np.where(label!=2)[0]]
     garbage = method[np.where(label==2)[0]]
@@ -23,6 +38,49 @@ def save_distribution(label, method, output, savename, hist=True):
     plt.legend()
     plt.savefig(os.path.join(output, (savename + '_distribution.png')))
     
+def posterior_transform(pos):
+    for i, posterior in enumerate(pos):
+        if posterior>0.5:
+            pos[i] = 1 - posterior
+    return pos
+    
+def calculate_acc(label, pred, method):
+    acc = []
+    cost = []
+    max = np.max(method)
+    for thu in np.arange(max, 0, -0.01):
+        query = np.where(method>=thu)[0]
+        cost.append(len(query))
+        acc_child = len(np.where(label[np.where(pred==1)[0]]==1)[0])
+        acc_mother = len(np.where(pred==1)[0])  
+        for i in query:
+            if pred[i] != label[i]:
+                if pred[i] == 1:
+                    acc_child += 1
+
+        
+        acc.append(float(acc_child/acc_mother))
+    return np.array(cost), np.array(acc)
+
+    
+def calculate_pre(label, pred, method):
+    pre = []
+    cost = []
+    max = np.max(method)
+    for thu in np.arange(max, 0, -0.01):
+        query = np.where(method>=thu)[0]
+        cost.append(len(query))
+        pre_child = len(np.where(pred[np.where(label==1)[0]]==1)[0])
+        pre_mother = len(np.where(label==1)[0])  
+        for i in query:
+            if pred[i] != label[i]:
+                if pred[i] == 0:
+                    pre_child += 1
+        
+        pre.append(float(pre_child/pre_mother))
+    return np.array(cost), np.array(pre)
+    
+
     
         
 def main(args):
@@ -35,16 +93,21 @@ def main(args):
     
     # Garbageとの分離
     output = args.output
-    print(bald.shape)
-    print(pos[:,1].shape)
-    print(entropy.shape)
-    print(label_in_garbage.shape)
     save_distribution(label_in_garbage, bald, output, savename='bald')
-    save_distribution(label_in_garbage, pos[:,1], output, savename='posterior')
     save_distribution(label_in_garbage, entropy, output, savename='entropy')
     
-    #cost関数の計算
+    #cost関数
+    pos_transformed =  posterior_transform(pos[:,1])
     
+    cost_acc_bald,acc_bald = calculate_acc(label, pred, bald)
+    cost_pre_bald,pre_bald = calculate_pre(label, pred, bald)
+    cost_acc_pos,acc_pos = calculate_acc(label, pred, pos_transformed)
+    cost_pre_pos,pre_pos = calculate_pre(label, pred, pos_transformed)
+    cost_acc_ent,acc_ent = calculate_acc(label, pred, entropy)
+    cost_pre_ent,pre_ent = calculate_pre(label, pred, entropy)
+    
+    pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_ent,output)
+    acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output)
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Comparison method')

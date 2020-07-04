@@ -41,8 +41,11 @@ def main(args):
         for img in paths:
             if 'yes' in img:
                 label.append(1)
-            else:
+            elif 'no' in img:
                 label.append(0)
+            else:
+                label.append(2)
+    np.save(os.path.join(args.output, 'label_include_garbage.npy'),np.array(label))
     with open('/mnt/aoni02/matsunaga/ae/inputs/extracted_wrong.txt', 'rb') as f:
         wrong_img_path = pickle.load(f)
     mode = []
