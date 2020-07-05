@@ -49,7 +49,7 @@ def calculate_acc(label, pred, method):
     cost = []
     max = np.max(method)
     min = np.min(method)
-    for thu in np.arange(max, min-1, -0.001):
+    for thu in np.arange(max, min-0.5, -0.01):
         query = np.where(method>=thu)[0]
         cost.append(len(query))
         acc_child = len(np.where(pred[np.where(pred==label)[0]]==1)[0])
@@ -72,7 +72,7 @@ def calculate_pre(label, pred, method):
     max = np.max(method)
     min = np.min(method)
     
-    for thu in np.arange(max, min-1, -0.001):
+    for thu in np.arange(max, min-0.5, -0.01):
         query = np.where(method>=thu)[0]
         cost.append(len(query))
         pre_child = len(np.where(label[np.where(pred==label)[0]]==1)[0])
@@ -91,11 +91,11 @@ def calculate_pre(label, pred, method):
     
         
 def main(args):
-    bald = np.load(os.path.join(args.input, 'BALD_0.5/10_drops_bald.npy'))
+    bald = np.load(os.path.join(args.input, 'BALD_0.5/100_drops_bald.npy'))
     label = np.load(os.path.join(args.input, 'DATA/y_true.npy'))
-    pred = np.load(os.path.join(args.input, 'DATA/0.5/10_pred_vgg.npy'))
+    pred = np.load(os.path.join(args.input, 'DATA/y_pred_dense.npy'))
     label_in_garbage = np.load(os.path.join(args.input, 'DATA/label_include_garbage.npy'))# 2:Garbage
-    pos = np.load(os.path.join(args.input, 'POSTERIOR/10_0.5_posterior_vgg.npy'))
+    pos = np.load(os.path.join(args.input, 'POSTERIOR/posterior_scaled.npy'))
     entropy = calculate_entropy(pos)
     
     # Garbageとの分離
