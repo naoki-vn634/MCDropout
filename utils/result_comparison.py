@@ -18,7 +18,7 @@ def pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_e
     plt.plot(cost_pre_pos,pre_pos,label='posterior')
     plt.plot(cost_pre_ent,pre_ent,label='entropy')
     plt.legend()
-    plt.savefig(os.path.join(output, 'precision.png'))
+    plt.savefig(os.path.join(output, 'precision_new.png'))
 
 def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output):
     plt.figure()
@@ -26,7 +26,7 @@ def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,
     plt.plot(cost_acc_pos,acc_pos,label='posterior')
     plt.plot(cost_acc_ent,acc_ent,label='entropy')
     plt.legend()
-    plt.savefig(os.path.join(output, 'accuracy.png'))
+    plt.savefig(os.path.join(output, 'accuracy_new.png'))
     
 def save_distribution(label, method, output, savename, hist=True):
     normal = method[np.where(label!=2)[0]]
@@ -36,7 +36,7 @@ def save_distribution(label, method, output, savename, hist=True):
     sns.distplot(garbage, hist=hist, label='garbage')
     plt.title(savename + '_distribution')
     plt.legend()
-    plt.savefig(os.path.join(output, (savename + '_distribution.png')))
+    plt.savefig(os.path.join(output, (savename + '_distribution_new.png')))
     
 def posterior_transform(pos):
     for i, posterior in enumerate(pos):
@@ -84,7 +84,7 @@ def calculate_pre(label, pred, method):
     
         
 def main(args):
-    bald = np.load(os.path.join(args.input, 'BALD_0.3/100_drops_bald.npy'))
+    bald = np.load(os.path.join(args.input, 'BALD_0.3/10_drops_bald_new.npy'))
     label = np.load(os.path.join(args.input, 'DATA/y_true.npy'))
     pred = np.load(os.path.join(args.input, 'DATA/y_pred.npy'))
     label_in_garbage = np.load(os.path.join(args.input, 'DATA/label_include_garbage.npy'))# 2:Garbage

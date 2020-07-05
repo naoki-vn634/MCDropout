@@ -132,7 +132,7 @@ def main(args):
     # VGG16:A, 
     cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
 
-    net = CustomMonteCarloVGG(config=cfg['A'],rate=None)
+    net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
     net.to(device)
 
     if args.multi_gpu:
