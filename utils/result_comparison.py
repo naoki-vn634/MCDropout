@@ -18,7 +18,7 @@ def pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_e
     plt.plot(cost_pre_pos,pre_pos,label='posterior')
     plt.plot(cost_pre_ent,pre_ent,label='entropy')
     plt.legend()
-    plt.savefig(os.path.join(output, 'precision_new.png'))
+    plt.savefig(os.path.join(output, 'precision.png'))
 
 def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output):
     plt.figure()
@@ -26,7 +26,7 @@ def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,
     plt.plot(cost_acc_pos,acc_pos,label='posterior')
     plt.plot(cost_acc_ent,acc_ent,label='entropy')
     plt.legend()
-    plt.savefig(os.path.join(output, 'accuracy_new.png'))
+    plt.savefig(os.path.join(output, 'accuracy.png'))
     
 def save_distribution(label, method, output, savename, hist=True):
     normal = method[np.where(label!=2)[0]]
@@ -36,7 +36,7 @@ def save_distribution(label, method, output, savename, hist=True):
     sns.distplot(garbage, hist=hist, label='garbage')
     plt.title(savename + '_distribution')
     plt.legend()
-    plt.savefig(os.path.join(output, (savename + '_distribution_new.png')))
+    plt.savefig(os.path.join(output, (savename + '_distribution.png')))
     
 def posterior_transform(pos):
     for i, posterior in enumerate(pos):
@@ -48,10 +48,11 @@ def calculate_acc(label, pred, method):
     acc = []
     cost = []
     max = np.max(method)
-    for thu in np.arange(max, 0, -0.01):
+    min = np.min(method)
+    for thu in np.arange(max, min-1, -0.001):
         query = np.where(method>=thu)[0]
         cost.append(len(query))
-        acc_child = len(np.where(label[np.where(pred==1)[0]]==1)[0])
+        acc_child = len(np.where(pred[np.where(pred==label)[0]]==1)[0])
         acc_mother = len(np.where(pred==1)[0])  
         for i in query:
             if pred[i] != label[i]:
@@ -60,6 +61,8 @@ def calculate_acc(label, pred, method):
 
         
         acc.append(float(acc_child/acc_mother))
+    print(len(cost))
+    print(len(acc))
     return np.array(cost), np.array(acc)
 
     
@@ -67,28 +70,32 @@ def calculate_pre(label, pred, method):
     pre = []
     cost = []
     max = np.max(method)
-    for thu in np.arange(max, 0, -0.01):
+    min = np.min(method)
+    
+    for thu in np.arange(max, min-1, -0.001):
         query = np.where(method>=thu)[0]
         cost.append(len(query))
-        pre_child = len(np.where(pred[np.where(label==1)[0]]==1)[0])
-        pre_mother = len(np.where(label==1)[0])  
+        pre_child = len(np.where(label[np.where(pred==label)[0]]==1)[0])
+        pre_mother = len(np.where(label==1)[0])
         for i in query:
             if pred[i] != label[i]:
                 if pred[i] == 0:
                     pre_child += 1
         
         pre.append(float(pre_child/pre_mother))
+    print(len(cost))
+    print(len(pre))
     return np.array(cost), np.array(pre)
     
 
     
         
 def main(args):
-    bald = np.load(os.path.join(args.input, 'BALD_0.3/10_drops_bald_new.npy'))
+    bald = np.load(os.path.join(args.input, 'BALD_0.5/10_drops_bald.npy'))
     label = np.load(os.path.join(args.input, 'DATA/y_true.npy'))
-    pred = np.load(os.path.join(args.input, 'DATA/y_pred.npy'))
+    pred = np.load(os.path.join(args.input, 'DATA/0.5/10_pred_vgg.npy'))
     label_in_garbage = np.load(os.path.join(args.input, 'DATA/label_include_garbage.npy'))# 2:Garbage
-    pos = np.load(os.path.join(args.input, 'POSTERIOR/posterior_scaled.npy'))
+    pos = np.load(os.path.join(args.input, 'POSTERIOR/10_0.5_posterior_vgg.npy'))
     entropy = calculate_entropy(pos)
     
     # Garbageとの分離

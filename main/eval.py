@@ -79,6 +79,13 @@ def main(args):
     bald = BALD(test_dataloader, net, device, n_drop=args.n_drop, n_cls=2)
     probs = bald.training()
     posterior = (probs.cpu().data.numpy()).mean(0)
+    pred = []
+    for pos in posterior:
+        label = np.argmax(pos)
+        print(label)
+        pred.append(label)
+ 
+    np.save(os.path.join(args.output,f'{args.n_drop}_pred_vgg.npy'),np.array(pred))
     np.save(os.path.join(args.output,f'{args.n_drop}_posterior_vgg.npy'),posterior)
     Bald = bald.evaluating(probs)
     
@@ -93,7 +100,6 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
-    parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--weight', type=str)
     parser.add_argument('--dr_rate',type=float)
