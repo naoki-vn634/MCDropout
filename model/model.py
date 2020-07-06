@@ -253,7 +253,10 @@ class CustomMonteCarloDensenet(DropoutDenseNet):
         self.fc = nn.Linear(hidden_size, num_classes)
         
     def forward(self,x):
-        h = self.densenet(x)
+        features = self.densenet(x)
+        h = F.relu(features, inplace=True)
+        h = F.adaptive_avg_pool2d(h, (1, 1))
+        h = torch.flatten(h, 1)
         y = self.fc(h)
         
         return y
@@ -272,7 +275,6 @@ class CustomMonteCarloDensenet(DropoutDenseNet):
 
         state_dict = load_state_dict_from_url(model_url, progress=progress)
         for key in list(state_dict.keys()):
-            print(key)
             res = pattern.match(key)
             if res:
                 new_key = res.group(1) + res.group(2)
