@@ -4,14 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import log2
+from glob import glob
 
-def calculate_entropy(pos):
+def calculate_entropy(poses):
     entropy = np.array([])
-    for posterior in pos:
-        ent = -sum([x*log2(x) if x != 0 else 0 for x in posterior])
-        entropy = np.append(entropy,ent)
+    for pos in poses:
+        for posterior in pos:
+            ent = -sum([x*log2(x) if x != 0 else 0 for x in posterior])
+            entropy = np.append(entropy,ent)
         
     return entropy
+
 def pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_ent,output):
     plt.figure()
     plt.plot(cost_pre_bald,pre_bald,label='bald')
@@ -91,16 +94,44 @@ def calculate_pre(label, pred, method):
     
         
 def main(args):
-    bald = np.load(os.path.join(args.input, 'BALD_0.5/100_drops_bald.npy'))
+    
+    cfg={
+        'dr_rate': args.dr_rate,
+        'n_drop': args.n_drop
+    }
+    
+    
     label = np.load(os.path.join(args.input, 'DATA/y_true.npy'))
-    pred = np.load(os.path.join(args.input, 'DATA/y_pred_dense.npy'))
     label_in_garbage = np.load(os.path.join(args.input, 'DATA/label_include_garbage.npy'))# 2:Garbage
-    pos = np.load(os.path.join(args.input, 'POSTERIOR/posterior_scaled.npy'))
-    entropy = calculate_entropy(pos)
+    
+    #BALD
+    bald_dirs = glob(os.path.join(args.input, 'BALD/*/'))
+    for i, bald_dir in enumerate(bald_dirs):
+        if i == 0:
+            balds = np.expand_dims(np.load(os.path.join(bald_dir, '{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
+        else:
+            bald = np.expand_dims(np.load(os.path.join(bald_dir, '{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
+            balds = np.concatenate((balds, bald),axis=0)
+        print(balds.shape)
+             
+    pos_dirs = glob(os.path.join(args.input, 'POSTERIOR/*/'))
+    for i, pos_dir in enumerate(pos_dirs):
+        if i == 0:
+            poses = np.expand_dims(np.load(os.path.join(bald_dir, '{}_posterior_vgg.npy'.format(cfg['n_drop']))),axis=0)
+        else:
+            pos = np.expand_dims(np.load(os.path.join(bald_dir, '{}_posterior_vgg.npy'.format(cfg['n_drop']))),axis=0)
+            poses = np.concatenate((poses, pos),axis=0)
+        print(poses.shape)
+    entropy = calculate_entropy(poses)
+    print(entropy.shape)
+    
+    pred = np.load(os.path.join(args.input, 'DATA/y_pred_dense.npy'))
+    
+    
     
     # Garbageとの分離
     output = args.output
-    save_distribution(label_in_garbage, bald, output, savename='bald')
+    save_distribution(label_in_garbage, balds, output, savename='bald')
     save_distribution(label_in_garbage, entropy, output, savename='entropy')
     
     #cost関数
@@ -120,6 +151,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Comparison method')
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
+    parser.add_argument('--dr_rate', type=float)
+    parser.add_argument('--n_drop', type=int, default=10)
     args = parser.parse_args()
     
     main(args)

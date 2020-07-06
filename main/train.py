@@ -147,10 +147,8 @@ def main(args):
         if args.model == 0:
             param.require_grad = True
         elif args.model == 1:
-            if 'fc' in name:
-                param.require_grad = True
-            else:
-                param.require_grad = False
+            param.require_grad = True
+            
                 
     train_dataset = MonteCarloDataset(x_train, y_train, transform=transforms, phase='train')
     train_dataloader = torch.utils.data.DataLoader(train_dataset,batch_size=args.batchsize,num_workers=0, shuffle=True)
@@ -179,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
     parser.add_argument('--epoch', type=int, default=20)
-    parser.add_argument('--batchsize', type=int, default=32)
+    parser.add_argument('--batchsize', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--tfboard', type=strtobool, default=False)
     parser.add_argument('--dr_rate', type=float)
