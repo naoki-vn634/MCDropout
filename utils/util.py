@@ -33,5 +33,3 @@ class BALD(object):
         U = entropy2 + entropy1
         return U
         
-
-            

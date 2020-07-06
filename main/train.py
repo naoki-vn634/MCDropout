@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import torch
 import argparse
@@ -12,7 +13,8 @@ sys.path.append('../preprocess/')
 from img_preprocess import ImageTransform, MonteCarloDataset
 
 sys.path.append('../model/')
-from model import CustomMonteCarloVGG
+from model import CustomMonteCarloVGG, DropoutDenseNet, CustomMonteCarloDensenet
+
 
 def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device, tfboard):
 
@@ -129,6 +131,10 @@ def main(args):
 
     x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
     
+    #Densenet161
+    model = CustomMonteCarloDensenet(pretrained=True,dr_rate=args.dr_rate)
+    print(model)
+   
     # VGG16:A, 
     cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
 
