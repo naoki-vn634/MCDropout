@@ -15,7 +15,7 @@ sys.path.append('../preprocess/')
 from img_preprocess import ImageTransform, MonteCarloDataset
 
 sys.path.append('../model/')
-from model import CustomMonteCarloVGG
+from model import CustomMonteCarloVGG, CustomMonteCarloDensenet
 
 sys.path.append('../utils/')
 from util import BALD
@@ -46,6 +46,8 @@ def main(args):
             else:
                 label.append(2)
     np.save(os.path.join(args.output, 'label_include_garbage.npy'),np.array(label))
+    
+    
     with open('/mnt/aoni02/matsunaga/ae/inputs/extracted_wrong.txt', 'rb') as f:
         wrong_img_path = pickle.load(f)
     mode = []
@@ -60,10 +62,13 @@ def main(args):
     print("|-- right: ",mode.count(0))
     print("|-- wrong: ",mode.count(1))
     print("##Label_length: ",len(label))
-    # VGG16:A, 
-    cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
+    if args.model ==0: # VGG16
+        cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
+        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
 
-    net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
+    elif args.model == 1: #Densenet161
+        net = CustomMonteCarloDensenet(pretrained=False,dr_rate=args.dr_rate)
+
     net.load_state_dict(torch.load(args.weight))
     net.to(device)
 
@@ -82,11 +87,10 @@ def main(args):
     pred = []
     for pos in posterior:
         label = np.argmax(pos)
-        print(label)
         pred.append(label)
  
-    np.save(os.path.join(args.output,f'{args.n_drop}_pred_vgg.npy'),np.array(pred))
-    np.save(os.path.join(args.output,f'{args.n_drop}_posterior_vgg.npy'),posterior)
+    np.save(os.path.join(args.output,f'{args.n_drop}_pred.npy'),np.array(pred))
+    np.save(os.path.join(args.output,f'{args.n_drop}_posterior.npy'),posterior)
     Bald = bald.evaluating(probs)
     
 
@@ -97,6 +101,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate BALD(Bayesian ActiveLearning by Disagreement)')
+    parser.add_argument('--model', type=int)
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)

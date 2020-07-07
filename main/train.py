@@ -133,11 +133,12 @@ def main(args):
     if args.model ==0: # VGG16
         cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
         net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
-        net.to(device)
+ 
     
     elif args.model == 1: #Densenet161
         net = CustomMonteCarloDensenet(pretrained=True,dr_rate=args.dr_rate)
-        net.to(device)
+    
+    net.to(device)  
 
     if args.multi_gpu:
         net = torch.nn.DataParallel(net)
@@ -147,8 +148,10 @@ def main(args):
         if args.model == 0:
             param.require_grad = True
         elif args.model == 1:
-            param.require_grad = True
-            
+            if 'fc' in name:
+                param.require_grad = True
+            else:
+                param.require_grad = False
                 
     train_dataset = MonteCarloDataset(x_train, y_train, transform=transforms, phase='train')
     train_dataloader = torch.utils.data.DataLoader(train_dataset,batch_size=args.batchsize,num_workers=0, shuffle=True)

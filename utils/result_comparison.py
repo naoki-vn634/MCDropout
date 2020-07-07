@@ -2,32 +2,33 @@ import os
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 import seaborn as sns
 from math import log2
 from glob import glob
 
-def calculate_entropy(poses):
+def calculate_entropy(pos):
     entropy = np.array([])
-    for pos in poses:
-        for posterior in pos:
-            ent = -sum([x*log2(x) if x != 0 else 0 for x in posterior])
-            entropy = np.append(entropy,ent)
-        
+    
+    for posterior in pos:
+        ent = -sum([x*log2(x) if x != 0 else 0 for x in posterior])
+        entropy = np.append(entropy,ent)    
     return entropy
 
-def pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_ent,output):
+def pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates):
     plt.figure()
-    plt.plot(cost_pre_bald,pre_bald,label='bald')
-    plt.plot(cost_pre_pos,pre_pos,label='posterior')
-    plt.plot(cost_pre_ent,pre_ent,label='entropy')
+    for i, rate in enumerate(rates):
+        plt.plot(cost_pre_bald[i], pre_bald[i], label=f'bald_{rate}', alpha=0.5)
+        plt.plot(cost_pre_ent[i], pre_ent[i], label=f'entropy_{rate}',alpha=0.5)
     plt.legend()
     plt.savefig(os.path.join(output, 'precision.png'))
 
-def acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output):
+def acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates):
     plt.figure()
-    plt.plot(cost_acc_bald,acc_bald,label='bald')
-    plt.plot(cost_acc_pos,acc_pos,label='posterior')
-    plt.plot(cost_acc_ent,acc_ent,label='entropy')
+    for i, rate in enumerate(rates):
+        
+        plt.plot(cost_acc_bald[i], acc_bald[i], label=f'bald_{rate}', alpha=0.5)
+        plt.plot(cost_acc_ent[i], acc_ent[i], label=f'entropy_{rate}', alpha=0.5)
     plt.legend()
     plt.savefig(os.path.join(output, 'accuracy.png'))
     
@@ -41,58 +42,65 @@ def save_distribution(label, method, output, savename, hist=True):
     plt.legend()
     plt.savefig(os.path.join(output, (savename + '_distribution.png')))
     
-def posterior_transform(pos):
-    for i, posterior in enumerate(pos):
-        if posterior>0.5:
-            pos[i] = 1 - posterior
+def posterior_transform(poses):
+    for pos in poses:
+        for i, posterior in enumerate(pos):
+            if posterior>0.5:
+                pos[i] = 1 - posterior
     return pos
     
-def calculate_acc(label, pred, method):
+def calculate_acc(label, preds, methods):
     acc = []
     cost = []
-    max = np.max(method)
-    min = np.min(method)
-    for thu in np.arange(max, min-0.5, -0.01):
-        query = np.where(method>=thu)[0]
-        cost.append(len(query))
-        acc_child = len(np.where(pred[np.where(pred==label)[0]]==1)[0])
-        acc_mother = len(np.where(pred==1)[0])  
-        for i in query:
-            if pred[i] != label[i]:
-                if pred[i] == 1:
-                    acc_child += 1
+    acc_ = []
+    cost_ = []
+    for i, (pred, method) in enumerate(zip(preds, methods)):
+        max = np.nanmax(method)
+        min = np.nanmin(method)
+        for thu in np.arange(max, min-0.02, -0.01):
+            query = np.where(method>=thu)[0]
+            cost.append(len(query))
+            acc_child = len(np.where(pred[np.where(pred==label)[0]]==1)[0])
+            acc_mother = len(np.where(pred==1)[0])  
+            for j in query:
+                if pred[j] != label[i]:
+                    if pred[j] == 1:
+                        acc_child += 1
+                        
+            acc.append(float(acc_child/acc_mother))
 
-        
-        acc.append(float(acc_child/acc_mother))
-    print(len(cost))
-    print(len(acc))
-    return np.array(cost), np.array(acc)
+        cost_.append(np.array(cost))
+        acc_.append(np.array(acc))
 
-    
-def calculate_pre(label, pred, method):
+    return  cost_ ,acc_
+
+def calculate_pre(label, preds, methods):
     pre = []
     cost = []
-    max = np.max(method)
-    min = np.min(method)
-    
-    for thu in np.arange(max, min-0.5, -0.01):
-        query = np.where(method>=thu)[0]
-        cost.append(len(query))
-        pre_child = len(np.where(label[np.where(pred==label)[0]]==1)[0])
-        pre_mother = len(np.where(label==1)[0])
-        for i in query:
-            if pred[i] != label[i]:
-                if pred[i] == 0:
-                    pre_child += 1
+    pre_ = []
+    cost_ = []
+    for i, (pred, method) in enumerate(zip(preds, methods)):
+        max = np.nanmax(method)
+        min = np.nanmin(method)
         
-        pre.append(float(pre_child/pre_mother))
-    print(len(cost))
-    print(len(pre))
-    return np.array(cost), np.array(pre)
-    
+        for thu in np.arange(max, min-0.5, -0.01):
+            query = np.where(method>=thu)[0]
+            cost.append(len(query))
+            pre_child = len(np.where(label[np.where(pred==label)[0]]==1)[0])
+            pre_mother = len(np.where(label==1)[0])
+            for j in query:
+                if pred[j] != label[j]:
+                    if pred[j] == 0:
+                        pre_child += 1
+            
+            pre.append(float(pre_child/pre_mother))
+            
+        cost_.append(np.array(cost))
+        pre_.append(np.array(pre))
 
-    
-        
+    return cost_, pre_
+
+
 def main(args):
     
     cfg={
@@ -101,51 +109,59 @@ def main(args):
     }
     
     
-    label = np.load(os.path.join(args.input, 'DATA/y_true.npy'))
-    label_in_garbage = np.load(os.path.join(args.input, 'DATA/label_include_garbage.npy'))# 2:Garbage
+    label = np.load(os.path.join(args.input, 'y_true.npy'))
+    rates = []
     
-    #BALD
-    bald_dirs = glob(os.path.join(args.input, 'BALD/*/'))
-    for i, bald_dir in enumerate(bald_dirs):
+    rate_dirs = glob(os.path.join(args.input, '*/'))
+    for i, rate_dir in enumerate(rate_dirs):
+        rate = os.path.basename(os.path.dirname(rate_dir))
+        rates.append(rate)
+        print(rates)
         if i == 0:
-            balds = np.expand_dims(np.load(os.path.join(bald_dir, '{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
+            label_in_garbage = np.load(os.path.join(rate_dir, 'result/label_include_garbage.npy'))# 2:Garbage
+            balds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
+            poses = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop']))),axis=0)
+            preds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_pred.npy'.format(cfg['n_drop']))),axis=0)
+            entropies = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop'])))),axis=0)
         else:
-            bald = np.expand_dims(np.load(os.path.join(bald_dir, '{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
-            balds = np.concatenate((balds, bald),axis=0)
-        print(balds.shape)
-             
-    pos_dirs = glob(os.path.join(args.input, 'POSTERIOR/*/'))
-    for i, pos_dir in enumerate(pos_dirs):
-        if i == 0:
-            poses = np.expand_dims(np.load(os.path.join(bald_dir, '{}_posterior_vgg.npy'.format(cfg['n_drop']))),axis=0)
-        else:
-            pos = np.expand_dims(np.load(os.path.join(bald_dir, '{}_posterior_vgg.npy'.format(cfg['n_drop']))),axis=0)
-            poses = np.concatenate((poses, pos),axis=0)
-        print(poses.shape)
-    entropy = calculate_entropy(poses)
-    print(entropy.shape)
+            pos = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop']))),axis=0)
+            poses = np.concatenate((poses, pos), axis=0)
+            bald = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
+            balds = np.concatenate((balds, bald), axis=0)
+            pred = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_pred.npy'.format(cfg['n_drop']))),axis=0)
+            preds = np.concatenate((preds, pred), axis=0)
+            entropy = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop'])))),axis=0)
+            entropies = np.concatenate((entropies, entropy), axis=0)
     
-    pred = np.load(os.path.join(args.input, 'DATA/y_pred_dense.npy'))
-    
-    
-    
+    print("##BALD: ", balds.shape)
+    print('##POSTERIOR: ', poses.shape)
+    print('##PREDS: ',preds.shape)
+    print('##ENTROPIES', entropies.shape)    
+
     # Garbageとの分離
     output = args.output
-    save_distribution(label_in_garbage, balds, output, savename='bald')
-    save_distribution(label_in_garbage, entropy, output, savename='entropy')
+    for i, rate in enumerate(rates):
+        print(rate)
+        save_distribution(label_in_garbage, balds[i], output, savename= f'bald_{rate}')
+        save_distribution(label_in_garbage, entropies[i], output, savename= f'entropy_{rate}')
     
     #cost関数
-    pos_transformed =  posterior_transform(pos[:,1])
     
-    cost_acc_bald,acc_bald = calculate_acc(label, pred, bald)
-    cost_pre_bald,pre_bald = calculate_pre(label, pred, bald)
-    cost_acc_pos,acc_pos = calculate_acc(label, pred, pos_transformed)
-    cost_pre_pos,pre_pos = calculate_pre(label, pred, pos_transformed)
-    cost_acc_ent,acc_ent = calculate_acc(label, pred, entropy)
-    cost_pre_ent,pre_ent = calculate_pre(label, pred, entropy)
+    cost_acc_bald,acc_bald = calculate_acc(label, preds, balds)
+    cost_pre_bald,pre_bald = calculate_pre(label, preds, balds)
+    cost_acc_ent,acc_ent = calculate_acc(label, preds, entropies)
+    cost_pre_ent,pre_ent = calculate_pre(label, preds, entropies)
+        
+    pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates)
+    acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates)
     
-    pre_result(cost_pre_bald, cost_pre_pos, cost_pre_ent, pre_bald,pre_pos,pre_ent,output)
-    acc_result(cost_acc_bald,cost_acc_pos,cost_acc_ent,acc_bald,acc_pos,acc_ent,output)
+    #Confusion Matrix
+    for i, rate in enumerate(rates):
+        conf_mat = confusion_matrix(label, preds[i])
+        plt.figure()
+        sns.heatmap(conf_mat, annot=True, cmap='Blues')
+        plt.savefig(os.path.join(args.output, '{}_confusion_matrix.png'.format(rate)))
+        
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Comparison method')
