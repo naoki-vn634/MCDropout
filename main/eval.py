@@ -108,7 +108,7 @@ if __name__ == '__main__':
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--weight', type=str)
     parser.add_argument('--dr_rate',type=float)
-    parser.add_argument('--n_drop', type=int, default=10)
+    parser.add_argument('--n_drop', type=int, default=100)
     args = parser.parse_args()
     main(args)
     
