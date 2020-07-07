@@ -5,7 +5,7 @@ import argparse
 import pickle
 import torch.nn as nn
 import numpy as np
-
+import matplotlib.pyplot as plt
 from glob import glob
 from sklearn.model_selection import train_test_split
 from distutils.util import strtobool
@@ -47,9 +47,12 @@ def main(args):
                 label.append(2)
     np.save(os.path.join(args.output, 'label_include_garbage.npy'),np.array(label))
     
-    
-    with open('/mnt/aoni02/matsunaga/ae/inputs/extracted_wrong.txt', 'rb') as f:
-        wrong_img_path = pickle.load(f)
+    if args.train:
+        with open('/mnt/aoni02/matsunaga/ae/inputs/wrong_of_traindata.txt', 'rb') as f:
+            wrong_img_path = pickle.load(f)
+    else:
+        with open('/mnt/aoni02/matsunaga/ae/inputs/extracted_wrong.txt', 'rb') as f:
+            wrong_img_path = pickle.load(f)
     mode = []
     for _ in img_path:
         if _ in wrong_img_path:
@@ -83,32 +86,42 @@ def main(args):
     
     bald = BALD(test_dataloader, net, device, n_drop=args.n_drop, n_cls=2)
     probs = bald.training()
-    posterior = (probs.cpu().data.numpy()).mean(0)
-    pred = []
-    for pos in posterior:
-        label = np.argmax(pos)
-        pred.append(label)
- 
-    np.save(os.path.join(args.output,f'{args.n_drop}_pred.npy'),np.array(pred))
-    np.save(os.path.join(args.output,f'{args.n_drop}_posterior.npy'),posterior)
     Bald = bald.evaluating(probs)
-    
-
     Bald_np = Bald.cpu().data.numpy()
-    np.save(os.path.join(args.output, 'mode.npy'), mode_np)
-    np.save(os.path.join(args.output, f'{args.n_drop}_drops_bald.npy'), Bald_np)
-    print(Bald.size())
+    
+    posterior = (probs.cpu().data.numpy()).mean(0)
+    preds = []
+    for pos in posterior:
+        pred = np.argmax(pos)
+        preds.append(pred)
+    
+    if args.train:
+        Bald_wrong = Bald_np[np.where(mode==1)[0]]
+        Bald_right = Bald_np[np.where(mode==0)[0]]
+        plt.figure()
+        sns.distplot(Bald_wrong, label='wrong')
+        sns.distplot(Bald_right, label='right')
+        plt.title('Bald for training data')
+        plt.legend()
+        plt.savefig(os.path.join(args.output, 'Bald_for_traindata.png'))
+    
+    if not args.train:
+        np.save(os.path.join(args.output, 'mode.npy'), mode_np)
+        np.save(os.path.join(args.output, f'{args.n_drop}_drops_bald.npy'), Bald_np)
+        np.save(os.path.join(args.output,f'{args.n_drop}_pred.npy'),np.array(pred))
+        np.save(os.path.join(args.output,f'{args.n_drop}_posterior.npy'),posterior)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate BALD(Bayesian ActiveLearning by Disagreement)')
     parser.add_argument('--model', type=int)
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
+    parser.add_argument('--train', type=strtobool)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--weight', type=str)
     parser.add_argument('--dr_rate',type=float)
-    parser.add_argument('--n_drop', type=int, default=100)
+    parser.add_argument('--n_drop', type=int, default=10)
     args = parser.parse_args()
     main(args)
     
