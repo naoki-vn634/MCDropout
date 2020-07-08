@@ -136,7 +136,6 @@ class DropoutDenseNet(nn.Module):
         return out
     
 
-
 class _DenseLayer(nn.Module):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate, memory_efficient=False):
         super(_DenseLayer, self).__init__()

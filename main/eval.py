@@ -6,6 +6,7 @@ import pickle
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from glob import glob
 from sklearn.model_selection import train_test_split
 from distutils.util import strtobool
@@ -94,17 +95,19 @@ def main(args):
     for pos in posterior:
         pred = np.argmax(pos)
         preds.append(pred)
+    pred_np = np.array(preds)
     
     if args.train:
-        Bald_wrong = Bald_np[np.where(mode==1)[0]]
-        Bald_right = Bald_np[np.where(mode==0)[0]]
+        Bald_wrong = Bald_np[np.where(pred_np!=np.array(label))[0]]
+        Bald_right = Bald_np[np.where(pred_np==np.array(label))[0]]
         plt.figure()
-        sns.distplot(Bald_wrong, label='wrong')
-        sns.distplot(Bald_right, label='right')
-        plt.title('Bald for training data')
+        sns.distplot(Bald_wrong, label='wrong', hist=True)
+        sns.distplot(Bald_right,  label='right', hist=True)
+        plt.title('Bald for train data')
         plt.legend()
-        plt.savefig(os.path.join(args.output, 'Bald_for_traindata.png'))
-    
+        plt.savefig(os.path.join(args.output, 'Bald_for_traindata_densenet161.png'))
+        plt.close()
+
     if not args.train:
         np.save(os.path.join(args.output, 'mode.npy'), mode_np)
         np.save(os.path.join(args.output, f'{args.n_drop}_drops_bald.npy'), Bald_np)
