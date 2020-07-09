@@ -3,6 +3,7 @@ import re
 import sys
 import torch
 import argparse
+import pickle
 import torch.nn as nn
 from glob import glob
 from sklearn.model_selection import train_test_split
@@ -120,14 +121,19 @@ def main(args):
     
     transforms = ImageTransform(mean,std)
     
-    for dir in glob(os.path.join(args.input,"*")):
-        paths = sorted(glob(os.path.join(dir,'*.jpg')))
-        img_path.extend(paths)
-        for img in paths:
-            if 'yes' in img:
-                label.append(1)
-            else:
-                label.append(0)
+    if args.txt:     
+        with open(args.txt, 'rb') as f:
+            img_path = pickle.load(f)
+    else:
+        for dir in glob(os.path.join(args.input,"*")):
+            paths = sorted(glob(os.path.join(dir,'*.jpg')))
+            img_path.extend(paths)
+        
+    for img in img_path:
+        if 'yes' in img:
+            label.append(1)
+        else:
+            label.append(0)
 
     x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
     if args.model ==0: # VGG16
@@ -176,6 +182,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--txt', type=str)
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
