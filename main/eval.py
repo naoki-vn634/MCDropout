@@ -73,7 +73,10 @@ def main(args):
     elif args.model == 1: #Densenet161
         net = CustomMonteCarloDensenet(pretrained=False,dr_rate=args.dr_rate)
 
-    net.load_state_dict(torch.load(args.weight))
+    weight = glob(os.path.join(args.weight, '*acc.pth'))[0]
+    print("WEIGHT", weight)
+
+    net.load_state_dict(torch.load(weight))
     net.to(device)
 
     if args.multi_gpu:
@@ -120,7 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--train', type=strtobool)
-    parser.add_argument('--multi_gpu', type=strtobool, default=False)
+    parser.add_argument('--multi_gpu', type=strtobool, default=True)
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--weight', type=str)
     parser.add_argument('--dr_rate',type=float)
