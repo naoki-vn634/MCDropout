@@ -52,7 +52,8 @@ def main(args):
         with open('/mnt/aoni02/matsunaga/ae/inputs/wrong_of_traindata.txt', 'rb') as f:
             wrong_img_path = pickle.load(f)
     else:
-        with open('/mnt/aoni02/matsunaga/ae/inputs/extracted_wrong.txt', 'rb') as f:
+        
+        with open(os.path.join(args.wrong_path, 'extracted_wrong.txt'), 'rb') as f:
             wrong_img_path = pickle.load(f)
     mode = []
     for _ in img_path:
@@ -128,6 +129,7 @@ if __name__ == '__main__':
     parser.add_argument('--weight', type=str)
     parser.add_argument('--dr_rate',type=float)
     parser.add_argument('--n_drop', type=int, default=10)
+    parser.add_argument('--wrong_path', type=str)
     args = parser.parse_args()
     main(args)
     

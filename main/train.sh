@@ -7,17 +7,11 @@ echo "enverionment"
 conda info -e
 
 CSV_FILE=(
-"/mnt/aoni02/matsunaga/dense/RESULT/5000/train_img_list_5000.txt"
-"/mnt/aoni02/matsunaga/dense/RESULT/10000/train_img_list_10000.txt"
-"/mnt/aoni02/matsunaga/dense/RESULT/15000/train_img_list_15000.txt"
-"/mnt/aoni02/matsunaga/dense/RESULT/20000/train_img_list_20000.txt"
+"/mnt/aoni02/matsunaga/dense/RESULT/4000/train_img_list_4000.txt"
 )
 
 OUTPUT=(
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/dense/5000"
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/dense/10000"
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/dense/15000"
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/dense/20000"
+"/mnt/aoni02/matsunaga/MCDropout/early_stage/vgg/4000"
 )
 
 
@@ -28,11 +22,11 @@ TFBOARD='True'
 
 DR_RATE=(0.3 0.5)
 
-MODEL='1'
+MODEL='0'
 
 for j in 0 1 ;do
     echo ${DR_RATE[j]}
-    for i in 0 1 2 3;do
+    for i in 0 1;do
         echo ${CSV_FILE[i]}
         SAVE_DIR=${OUTPUT[i]}/${DR_RATE[j]}
         CSV_INPUT=${CSV_FILE[i]}

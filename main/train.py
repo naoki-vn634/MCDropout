@@ -109,6 +109,7 @@ def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device
 def main(args):
     device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
     print('#device: ',device)
+    os.environ['CUDA_VISIBLE_DEVICES']='1'
     
     img_path = []
     label = []
