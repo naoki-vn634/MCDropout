@@ -15,6 +15,33 @@ def calculate_entropy(pos):
         entropy = np.append(entropy,ent)    
     return entropy
 
+def save_distribution(label, pred, method, output, savename, hist=False):
+    correct = method[np.where(label==pred)[0]]
+    wrong = method[np.where(label!=pred)[0]]
+    plt.figure()
+    sns.distplot(correct, hist=hist, label='correct')
+    sns.distplot(wrong, hist=hist, label='wrong')
+    plt.title(savename + '_distribution')
+    plt.legend()
+    plt.savefig(os.path.join(output, (savename + '_distribution.png')))
+    plt.close()
+
+def thureshold_result(thureshold, probability, standard, savename, ylabel, output, rates):
+    fig, ax = plt.subplots()
+    if standard=='bald':
+        for i,rate in enumerate(rates):
+            ax.plot(thureshold[i], probability[i], label=standard+f'_{rate}')
+    elif standard=='entropy':
+        ax.plot(thureshold[0], probability[0], label=standard)
+    plt.legend()
+    ax.set_title(savename)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(standard+'_threshold')
+    ax.invert_xaxis()
+    # fig.tight_layout()
+    plt.savefig(os.path.join(output,(savename+'.png')))
+    plt.close()
+
 def pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates):
     plt.figure()
     colors = ['blue', 'red', 'black']
@@ -42,7 +69,7 @@ def acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates):
     plt.close()
 
     
-def save_distribution(label, method, output, savename, hist=True):
+def save_distribution_garbage(label, method, output, savename, hist=True):
     normal = method[np.where(label!=2)[0]]
     garbage = method[np.where(label==2)[0]]
     plt.figure()
@@ -64,12 +91,14 @@ def calculate_acc(label, preds, methods):
 
     acc_ = []
     cost_ = []
-    for i, (pred, method) in enumerate(zip(preds, methods)):
+    thu_ = []
+    for i, (pred, method) in enumerate(zip(preds, methods)):# Each Dropout_rate
         acc = []
         cost = []
+        thureshold = []
         max = np.nanmax(method)
         min = np.nanmin(method)
-        for thu in np.arange(max, min-0.02, -0.001):
+        for thu in np.arange(max, min-0.02, -0.01):
             query = np.where(method>=thu)[0]
             cost.append(len(query))
             acc_child = len(np.where(pred[np.where(pred==label)[0]]==1)[0])
@@ -80,23 +109,26 @@ def calculate_acc(label, preds, methods):
                         acc_child += 1
                         
             acc.append(float(acc_child/acc_mother))
-
+            thureshold.append(thu)
+        thu_.append(np.array(thureshold))
         cost_.append(np.array(cost))
         acc_.append(np.array(acc))
 
-    return  cost_ ,acc_
+    return  cost_ ,acc_, thu_
 
 def calculate_pre(label, preds, methods):
 
     pre_ = []
     cost_ = []
+    thu_ = []
     for i, (pred, method) in enumerate(zip(preds, methods)):
         pre = []
         cost = []
+        thureshold = []
         max = np.nanmax(method)
         min = np.nanmin(method)
         
-        for thu in np.arange(max, min-0.02, -0.001):
+        for thu in np.arange(max, min-0.02, -0.01):
             query = np.where(method>=thu)[0]
             cost.append(len(query))
             pre_child = len(np.where(label[np.where(pred==label)[0]]==1)[0])
@@ -107,11 +139,12 @@ def calculate_pre(label, preds, methods):
                         pre_child += 1
             
             pre.append(float(pre_child/pre_mother))
-            
+            thureshold.append(thu)
+        thu_.append(np.array(thureshold))
         cost_.append(np.array(cost))
         pre_.append(np.array(pre))
 
-    return cost_, pre_
+    return cost_, pre_, thu_
 
 
 def main(args):
@@ -130,7 +163,7 @@ def main(args):
         rate = os.path.basename(os.path.dirname(rate_dir))
         rates.append(rate)
         if i == 0:
-            label_in_garbage = np.load(os.path.join(rate_dir, 'result/label_include_garbage.npy'))# 2:Garbage
+            # label_in_garbage = np.load(os.path.join(rate_dir, 'result/label_include_garbage.npy'))# 2:Garbage
             balds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
             # poses = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop']))),axis=0)
             poses = np.expand_dims(np.load(os.path.join(rate_dir, 'result/posterior_scaled.npy')),axis=0)
@@ -159,25 +192,32 @@ def main(args):
     # Garbageとの分離
     output = args.output
     for i, rate in enumerate(rates):
-        save_distribution(label_in_garbage, balds[i], output, savename= f'bald_{rate}')
-        save_distribution(label_in_garbage, entropies[i], output, savename= f'entropy_{rate}')
-    
+        # save_distribution_garbage(label_in_garbage, balds[i], output, savename= f'bald_{rate}')
+        # save_distribution_garbage(label_in_garbage, entropies[i], output, savename= f'entropy_{rate}')
+        save_distribution(label, preds[i], balds[i], output, savename=f'bald_{rate}')
+        save_distribution(label, preds[i], entropies[i], output, savename=f'entropy_{rate}')
+
     #cost関数
     
-    cost_acc_bald,acc_bald = calculate_acc(label, preds, balds)
-    cost_pre_bald,pre_bald = calculate_pre(label, preds, balds)
-    cost_acc_ent,acc_ent = calculate_acc(label, preds, entropies)
-    cost_pre_ent,pre_ent = calculate_pre(label, preds, entropies)
+    cost_acc_bald, acc_bald, thu_acc_bald = calculate_acc(label, preds, balds)
+    cost_pre_bald, pre_bald, thu_pre_bald = calculate_pre(label, preds, balds)
+    cost_acc_ent, acc_ent, thu_acc_ent = calculate_acc(label, preds, entropies)
+    cost_pre_ent, pre_ent, thu_pre_ent = calculate_pre(label, preds, entropies)
         
     pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates)
     acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates)
     
+    # thureshold_result(thu_acc_bald, acc_bald, standard='bald', savename='bald_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
+    # thureshold_result(thu_pre_bald, pre_bald, standard='bald', savename='bald_pre_thureshold', ylabel='precision', output=output, rates=rates)
+    # thureshold_result(thu_acc_ent, acc_ent, standard='entropy', savename='entropy_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
+    # thureshold_result(thu_pre_ent, pre_ent, standard='entropy', savename='entropy_pre_thureshold', ylabel='precision', output=output, rates=rates)
+    
     #Confusion Matrix
-    for i, rate in enumerate(rates):
-        conf_mat = confusion_matrix(label, preds[i])
-        plt.figure()
-        sns.heatmap(conf_mat, annot=True, cmap='Blues',fmt='.5g')
-        plt.savefig(os.path.join(args.output, '{}_confusion_matrix.png'.format(rate)))
+    # for i, rate in enumerate(rates):
+    #     conf_mat = confusion_matrix(label, preds[i])
+    #     plt.figure()
+    #     sns.heatmap(conf_mat, annot=True, cmap='Blues',fmt='.5g')
+    #     plt.savefig(os.path.join(args.output, '{}_confusion_matrix.png'.format(rate)))
         
     
 if __name__ == '__main__':
