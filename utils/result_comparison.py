@@ -195,7 +195,7 @@ def main(args):
         # save_distribution_garbage(label_in_garbage, balds[i], output, savename= f'bald_{rate}')
         # save_distribution_garbage(label_in_garbage, entropies[i], output, savename= f'entropy_{rate}')
         save_distribution(label, preds[i], balds[i], output, savename=f'bald_{rate}')
-        save_distribution(label, preds[i], entropies[i], output, savename=f'entropy_{rate}')
+    save_distribution(label, preds[0], entropies[0], output, savename=f'entropy')
 
     #cost関数
     
