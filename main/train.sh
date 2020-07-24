@@ -7,11 +7,11 @@ echo "enverionment"
 conda info -e
 
 CSV_FILE=(
-"/mnt/aoni02/matsunaga/dense/RESULT/4000/train_img_list_4000.txt"
+"/mnt/aoni02/matsunaga/dense/RESULT/5000/train_img_list_5000.txt"
 )
 
 OUTPUT=(
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/vgg/4000"
+"/mnt/aoni02/matsunaga/MCDropout/early_stage/vgg/5000_decreased_dr"
 )
 
 
@@ -26,7 +26,7 @@ MODEL='0'
 
 for j in 0 1 ;do
     echo ${DR_RATE[j]}
-    for i in 0 1;do
+    for i in 0;do
         echo ${CSV_FILE[i]}
         SAVE_DIR=${OUTPUT[i]}/${DR_RATE[j]}
         CSV_INPUT=${CSV_FILE[i]}

@@ -1,3 +1,13 @@
 {
     "python.pythonPath": "/home/matsunaga/.pyenv/versions/miniconda3-latest/envs/meta_cognition/bin/python"
 }
+{
+    "vim.insertModeKeyBindings": [
+        {
+            "before": ["j", "j"],
+            "after": ["<Esc>"]
+        }
+    ],
+  
+    "vim.hlsearch": true
+}

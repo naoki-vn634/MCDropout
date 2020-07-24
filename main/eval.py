@@ -69,16 +69,19 @@ def main(args):
     print("##Label_length: ",len(label))
     if args.model ==0: # VGG16
         cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
-        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
-
+        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate, all_layer=False)
+ 
     elif args.model == 1: #Densenet161
         net = CustomMonteCarloDensenet(pretrained=False,dr_rate=args.dr_rate)
-
+    net.to(device)
+    print(net)
+    from torchsummary import summary
+    summary(net, input_size=(3, 224, 224))    
     weight = glob(os.path.join(args.weight, '*acc.pth'))[0]
     print("WEIGHT", weight)
 
     net.load_state_dict(torch.load(weight))
-    net.to(device)
+    
 
     if args.multi_gpu:
         net = torch.nn.DataParallel(net)

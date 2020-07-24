@@ -19,10 +19,10 @@ class CustomMonteCarloVGG(nn.Module):
     Image_size : (3,224,224)
     p : Probability of Dropout apply
     '''
-    def __init__(self, config, num_classes=2, channel=3, rate=0.5, bn=False, init_weight=True):
+    def __init__(self, config, num_classes=2, channel=3, rate=0.5, bn=False, init_weight=True, all_layer=False):
         super(CustomMonteCarloVGG, self).__init__()
-        
-        self.features = self.make_layers(config, batch_norm=bn, in_channels=channel, p=rate)
+
+        self.features = self.make_layers(config, batch_norm=bn, in_channels=channel, p=rate, all_layer=all_layer)
 
         self.avgpool = nn.AdaptiveAvgPool2d((7,7))
         self.classifier = nn.Sequential(
@@ -59,20 +59,25 @@ class CustomMonteCarloVGG(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-    def make_layers(self,config, batch_norm, in_channels, p):
+    def make_layers(self,config, batch_norm, in_channels, p, all_layer):
         layers = []
-        for v in config:
+        if all_layer:
+            dropout_layer = [0, 1, 3, 4, 6, 7, 8,10, 11, 12, 14,15,16]
+        else:    
+            dropout_layer = [1, 4, 8, 12, 16]
+        for i, v in enumerate(config):
             if v == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+
             else:
                 conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
                 if batch_norm:
                     layers += [conv2d, nn.BatchNorm2d(v), nn.Dropout2d(p), nn.ReLU(inplace=True)]
-                elif p==None:
-                    layers += [conv2d, nn.ReLU(inplace=True)]                
-                else:
+                elif i in dropout_layer:
                     layers += [conv2d, nn.Dropout2d(p), nn.ReLU(inplace=True)]
-                
+                else:
+                    layers += [conv2d, nn.ReLU(inplace=True)]                
+                      
                 in_channels = v
         return nn.Sequential(*layers)
     

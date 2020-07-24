@@ -139,7 +139,7 @@ def main(args):
     x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
     if args.model ==0: # VGG16
         cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
-        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate)
+        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate, all_layer=False)
  
     
     elif args.model == 1: #Densenet161

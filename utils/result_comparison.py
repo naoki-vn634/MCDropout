@@ -16,6 +16,9 @@ def calculate_entropy(pos):
     return entropy
 
 def save_distribution(label, pred, method, output, savename, hist=False):
+    print(len(method))
+    print(len(label))
+    print(len(pred))
     correct = method[np.where(label==pred)[0]]
     wrong = method[np.where(label!=pred)[0]]
     plt.figure()
@@ -50,8 +53,8 @@ def pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates):
         if i == 0:
             plt.plot(cost_pre_ent[i], pre_ent[i], label=f'entropy',alpha=0.5, color='red', linestyle='dashed')
     plt.legend()
-    plt.title('Precision')
-    plt.savefig(os.path.join(output, 'precision.png'))
+    plt.title('Recall')
+    plt.savefig(os.path.join(output, 'recall.png'))
     plt.close()
 
 
@@ -64,8 +67,8 @@ def acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates):
         if i == 0:
             plt.plot(cost_acc_ent[i], acc_ent[i], label=f'entropy', alpha=0.5, color='red', linestyle='dashed')
     plt.legend()
-    plt.title('Accuracy')
-    plt.savefig(os.path.join(output, 'accuracy.png'))
+    plt.title('Precision')
+    plt.savefig(os.path.join(output, 'precision.png'))
     plt.close()
 
     
@@ -150,43 +153,50 @@ def calculate_pre(label, preds, methods):
 def main(args):
     
     cfg={
-        'dr_rate': args.dr_rate,
+        # 'dr_rate': args.dr_rate,
         'n_drop': args.n_drop
     }
     
     
     label = np.load(os.path.join(args.input, 'y_true.npy'))
+    # poses = np.load(os.path.join(args.input, 'posterior.npy'))
+    # preds = np.load(os.path.join(args.input, 'y_pred.npy'))
+    # entropies = calculate_entropy(poses)
     rates = []
     
     rate_dirs = glob(os.path.join(args.input, '*/'))
     for i, rate_dir in enumerate(rate_dirs):
+        if "result" in rate_dir:
+            continue
         rate = os.path.basename(os.path.dirname(rate_dir))
         rates.append(rate)
         if i == 0:
             # label_in_garbage = np.load(os.path.join(rate_dir, 'result/label_include_garbage.npy'))# 2:Garbage
             balds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
-            # poses = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop']))),axis=0)
             poses = np.expand_dims(np.load(os.path.join(rate_dir, 'result/posterior_scaled.npy')),axis=0)
+            # poses = np.expand_dims(np.load(os.path.join(rate_dir, '../posterior.npy')),axis=0)
             # preds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_pred.npy'.format(cfg['n_drop']))),axis=0)
-            preds = np.expand_dims(np.load(os.path.join(rate_dir, 'result/y_pred_dense.npy')),axis=0)
-            # entropies = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop'])))),axis=0)
+            # preds = np.expand_dims(np.load(os.path.join(rate_dir, '../y_pred.npy')),axis=0)
+            preds = np.expand_dims(np.load(os.path.join(rate_dir, "result/y_pred_dense.npy")),axis=0)
             entropies = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/posterior_scaled.npy'))),axis=0)
+            # entropies = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, '{}_posterior.npy'))),axis=0)
         else:
-            # pos = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop']))),axis=0)
             pos = np.expand_dims(np.load(os.path.join(rate_dir, 'result/posterior_scaled.npy')),axis=0)
+            # pos = np.expand_dims(np.load(os.path.join(rate_dir, '../posterior.npy')),axis=0)
             poses = np.concatenate((poses, pos), axis=0)
             bald = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_drops_bald.npy'.format(cfg['n_drop']))),axis=0)
             balds = np.concatenate((balds, bald), axis=0)
             # pred = np.expand_dims(np.load(os.path.join(rate_dir, 'result/{}_pred.npy'.format(cfg['n_drop']))),axis=0)
             pred = np.expand_dims(np.load(os.path.join(rate_dir, 'result/y_pred_dense.npy')),axis=0)
             preds = np.concatenate((preds, pred), axis=0)
-            # entropy = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/{}_posterior.npy'.format(cfg['n_drop'])))),axis=0)
             entropy = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'result/posterior_scaled.npy'))),axis=0)
+            # entropy = np.expand_dims(calculate_entropy(np.load(os.path.join(rate_dir, 'posterior.npy'))),axis=0)
             entropies = np.concatenate((entropies, entropy), axis=0)
     
     print("##BALD: ", balds.shape)
     print('##POSTERIOR: ', poses.shape)
     print('##PREDS: ',preds.shape)
+    print('##LABELS: ',label.shape)
     print('##ENTROPIES', entropies.shape)    
 
     # Garbageとの分離
@@ -207,10 +217,10 @@ def main(args):
     pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates)
     acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates)
     
-    # thureshold_result(thu_acc_bald, acc_bald, standard='bald', savename='bald_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
-    # thureshold_result(thu_pre_bald, pre_bald, standard='bald', savename='bald_pre_thureshold', ylabel='precision', output=output, rates=rates)
-    # thureshold_result(thu_acc_ent, acc_ent, standard='entropy', savename='entropy_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
-    # thureshold_result(thu_pre_ent, pre_ent, standard='entropy', savename='entropy_pre_thureshold', ylabel='precision', output=output, rates=rates)
+    thureshold_result(thu_acc_bald, acc_bald, standard='bald', savename='bald_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
+    thureshold_result(thu_pre_bald, pre_bald, standard='bald', savename='bald_pre_thureshold', ylabel='precision', output=output, rates=rates)
+    thureshold_result(thu_acc_ent, acc_ent, standard='entropy', savename='entropy_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
+    thureshold_result(thu_pre_ent, pre_ent, standard='entropy', savename='entropy_pre_thureshold', ylabel='precision', output=output, rates=rates)
     
     #Confusion Matrix
     # for i, rate in enumerate(rates):
@@ -224,7 +234,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Comparison method')
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
-    parser.add_argument('--dr_rate', type=float)
+    # parser.add_argument('--dr_rate', type=float)
     parser.add_argument('--n_drop', type=int, default=100)
     args = parser.parse_args()
     
