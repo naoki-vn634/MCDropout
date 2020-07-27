@@ -29,13 +29,13 @@ def save_distribution(label, pred, method, output, savename, hist=False):
     plt.savefig(os.path.join(output, (savename + '_distribution.png')))
     plt.close()
 
-def thureshold_result(thureshold, probability, standard, savename, ylabel, output, rates):
+def threshold_result(threshold, probability, standard, savename, ylabel, output, rates):
     fig, ax = plt.subplots()
     if standard=='bald':
         for i,rate in enumerate(rates):
-            ax.plot(thureshold[i], probability[i], label=standard+f'_{rate}')
+            ax.plot(threshold[i], probability[i], label=standard+f'_{rate}')
     elif standard=='entropy':
-        ax.plot(thureshold[0], probability[0], label=standard)
+        ax.plot(threshold[0], probability[0], label=standard)
     plt.legend()
     ax.set_title(savename)
     ax.set_ylabel(ylabel)
@@ -98,7 +98,7 @@ def calculate_acc(label, preds, methods):
     for i, (pred, method) in enumerate(zip(preds, methods)):# Each Dropout_rate
         acc = []
         cost = []
-        thureshold = []
+        threshold = []
         max = np.nanmax(method)
         min = np.nanmin(method)
         for thu in np.arange(max, min-0.02, -0.01):
@@ -112,8 +112,8 @@ def calculate_acc(label, preds, methods):
                         acc_child += 1
                         
             acc.append(float(acc_child/acc_mother))
-            thureshold.append(thu)
-        thu_.append(np.array(thureshold))
+            threshold.append(thu)
+        thu_.append(np.array(threshold))
         cost_.append(np.array(cost))
         acc_.append(np.array(acc))
 
@@ -127,7 +127,7 @@ def calculate_pre(label, preds, methods):
     for i, (pred, method) in enumerate(zip(preds, methods)):
         pre = []
         cost = []
-        thureshold = []
+        threshold = []
         max = np.nanmax(method)
         min = np.nanmin(method)
         
@@ -142,8 +142,8 @@ def calculate_pre(label, preds, methods):
                         pre_child += 1
             
             pre.append(float(pre_child/pre_mother))
-            thureshold.append(thu)
-        thu_.append(np.array(thureshold))
+            threshold.append(thu)
+        thu_.append(np.array(threshold))
         cost_.append(np.array(cost))
         pre_.append(np.array(pre))
 
@@ -217,11 +217,24 @@ def main(args):
     pre_result(cost_pre_bald, cost_pre_ent, pre_bald, pre_ent, output, rates)
     acc_result(cost_acc_bald, cost_acc_ent, acc_bald, acc_ent, output, rates)
     
-    thureshold_result(thu_acc_bald, acc_bald, standard='bald', savename='bald_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
-    thureshold_result(thu_pre_bald, pre_bald, standard='bald', savename='bald_pre_thureshold', ylabel='precision', output=output, rates=rates)
-    thureshold_result(thu_acc_ent, acc_ent, standard='entropy', savename='entropy_acc_thureshold', ylabel='accuracy', output=output, rates=rates)
-    thureshold_result(thu_pre_ent, pre_ent, standard='entropy', savename='entropy_pre_thureshold', ylabel='precision', output=output, rates=rates)
-    
+    threshold_result(thu_acc_bald, acc_bald, standard='bald', savename='bald_acc_threshold', ylabel='accuracy', output=output, rates=rates)
+    threshold_result(thu_pre_bald, pre_bald, standard='bald', savename='bald_pre_threshold', ylabel='precision', output=output, rates=rates)
+    threshold_result(thu_acc_ent, acc_ent, standard='entropy', savename='entropy_acc_threshold', ylabel='accuracy', output=output, rates=rates)
+    threshold_result(thu_pre_ent, pre_ent, standard='entropy', savename='entropy_pre_threshold', ylabel='precision', output=output, rates=rates)
+    def threshold_entropy(thu_acc_ent, acc_ent, thu_pre_ent, pre_ent, output):
+        fig, ax = plt.subplots()
+        ax.plot(thu_acc_ent[0], acc_ent[0], label='Precision')
+        ax.plot(thu_pre_ent[0], pre_ent[0], label='Recall')
+        plt.legend()
+        ax.set_title('Relationship between costs and threshold')
+        ax.set_ylabel('Accuracy')
+        ax.set_xlabel('threshold')
+        ax.invert_xaxis()
+        plt.savefig(os.path.join(output,('entropy_costs.png')))
+        plt.close()
+             
+         
+    threshold_entropy(thu_acc_ent, acc_ent, thu_pre_ent, pre_ent, output=output) 
     #Confusion Matrix
     # for i, rate in enumerate(rates):
     #     conf_mat = confusion_matrix(label, preds[i])

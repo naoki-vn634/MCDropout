@@ -6,41 +6,58 @@ source activate meta_cognition
 echo "enverionment"
 conda info -e
 
-CSV_FILE=(
-"/mnt/aoni02/matsunaga/dense/RESULT/5000/train_img_list_5000.txt"
-)
+INPUT="/mnt/aoni02/matsunaga/Dataset/200313_global-model_include_garbage/train"
 
-OUTPUT=(
-"/mnt/aoni02/matsunaga/MCDropout/early_stage/vgg/5000_decreased_dr"
-)
+
+OUTPUT="/mnt/aoni02/matsunaga/MCDropout"
+
+INCLUDE_GARBAGE='include_garbage'
 
 
 EPOCH='20'
 BATCHSIZE='16'
 LR='1e-3'
 TFBOARD='True'
+NUM_CLASS="3"
 
-DR_RATE=(0.3 0.5)
+DR_RATE="
+0.1
+0.3
+0.5
+"
 
-MODEL='0'
+# MODEL=(0, 1) #0:VGG 1,Dense
+MODEL=(
+"VGG16"
+"Dense161_finetune"
+)
 
-for j in 0 1 ;do
+for dr_rate in ${DR_RATE[@]} ;do
     echo ${DR_RATE[j]}
-    for i in 0;do
-        echo ${CSV_FILE[i]}
-        SAVE_DIR=${OUTPUT[i]}/${DR_RATE[j]}
-        CSV_INPUT=${CSV_FILE[i]}
+    for model in ${MODEL[@]};do
+        echo $INPUT
+        SAVE_DIR=$OUTPUT/$model/$INCLUDE_GARBAGE/$dr_rate
+        echo $SAVE_DIR
 
+        if [ $model == "VGG16" ];then
+            model_mode="0"
+        else
+            model_mode="1"
+        fi
+        echo $model
+        echo $model_mode
+        echo $NUM_CLASS
 
         python -u train.py \
-        --txt $CSV_INPUT \
+        --input $INPUT \
         --output $SAVE_DIR \
         --epoch $EPOCH \
         --batchsize $BATCHSIZE \
         --lr $LR \
         --tfboard $TFBOARD \
-        --dr_rate ${DR_RATE[j]} \
-        --model $MODEL
+        --dr_rate $dr_rate \
+        --model $model_mode \
+        --n_cls $NUM_CLASS
 
     done
 done

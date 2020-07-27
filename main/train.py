@@ -133,17 +133,22 @@ def main(args):
     for img in img_path:
         if 'yes' in img:
             label.append(1)
-        else:
+        elif 'no' in img:
             label.append(0)
-
+        elif 'garbage' in img:
+            label.append(2)
+            
     x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
     if args.model ==0: # VGG16
         cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
-        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate, all_layer=False)
+        
+        print(type(args.n_cls))
+        print(args.n_cls)
+        net = CustomMonteCarloVGG(config=cfg['A'],rate=args.dr_rate, all_layer=False, num_classes=args.n_cls)
  
     
     elif args.model == 1: #Densenet161
-        net = CustomMonteCarloDensenet(pretrained=True,dr_rate=args.dr_rate)
+        net = CustomMonteCarloDensenet(pretrained=True, dr_rate=args.dr_rate, num_classes=args.n_cls)
     
     net.to(device)  
 
@@ -193,6 +198,7 @@ if __name__ == '__main__':
     parser.add_argument('--tfboard', type=strtobool, default=False)
     parser.add_argument('--dr_rate', type=float)
     parser.add_argument('--model', type=int)
+    parser.add_argument('--n_cls', type=int)
     
     args = parser.parse_args()
     main(args)
