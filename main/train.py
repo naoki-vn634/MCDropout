@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import torch
+import json
 import argparse
 import pickle
 import torch.nn as nn
@@ -17,7 +18,7 @@ sys.path.append('../model/')
 from model import CustomMonteCarloVGG, DropoutDenseNet, CustomMonteCarloDensenet
 
 
-def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device, tfboard):
+def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device, tfboard, scheduler):
 
     Loss = {'train':[0]*num_epoch, 'test':[0]*num_epoch}
     Acc  = {'train':[0]*num_epoch, 'test':[0]*num_epoch}
@@ -93,7 +94,7 @@ def train(net, dataloaders_dict, output, num_epoch, optimizer, criterion, device
             best_loss = epoch_loss
             torch.save(net.state_dict(),os.path.join(output,'best_loss.pth'))
     
-    
+        scheduler.step()
     best_acc_weight = os.path.join(output,'best_acc.pth')
     best_loss_weight = os.path.join(output,'best_loss.pth')
     
@@ -122,23 +123,30 @@ def main(args):
     
     transforms = ImageTransform(mean,std)
     
-    if args.txt:     
-        with open(args.txt, 'rb') as f:
-            img_path = pickle.load(f)
+    if 'json' in args.input:
+        with open(args.input, 'r') as f:
+            db = json.load(f)
+        x_train = db['train']['path']
+        y_train = db['train']['label']
+        x_test = db['test']['path']
+        y_test = db['test']['label']
+
+
     else:
         for dir in glob(os.path.join(args.input,"*")):
             paths = sorted(glob(os.path.join(dir,'*.jpg')))
             img_path.extend(paths)
         
-    for img in img_path:
-        if 'yes' in img:
-            label.append(1)
-        elif 'no' in img:
-            label.append(0)
-        elif 'garbage' in img:
-            label.append(2)
-            
-    x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
+        for img in img_path:
+            if 'yes' in img:
+                label.append(1)
+            elif 'no' in img:
+                label.append(0)
+            elif 'garbage' in img:
+                label.append(2)
+                
+        x_train, x_test, y_train, y_test = train_test_split(img_path,label,test_size=0.25)
+
     if args.model ==0: # VGG16
         cfg ={'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']}
         
@@ -181,14 +189,16 @@ def main(args):
     
     optimizer = torch.optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
     criterion = nn.CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lr_lambda=lambda epoch: 0.95 ** epoch
+    )
     
-    train(net, dataloaders_dict, output=args.output, num_epoch=args.epoch, optimizer=optimizer, criterion=criterion, device=device, tfboard=args.tfboard)
+    train(net, dataloaders_dict, output=args.output, num_epoch=args.epoch, optimizer=optimizer, criterion=criterion, device=device, tfboard=args.tfboard, scheduler=scheduler)
     
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--txt', type=str)
     parser.add_argument('--input', type=str)
     parser.add_argument('--output', type=str)
     parser.add_argument('--multi_gpu', type=strtobool, default=False)
